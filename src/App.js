@@ -2,57 +2,73 @@ import React, { useState, useEffect } from 'react';
 import { createChart } from 'lightweight-charts';
 import './App.css';
 
-const websocketUrl = 'ws://localhost:8000/charts';
+const websocketUrl = 'ws://192.168.0.180:8000/charts';
 
 function App() {
-
-  const [count, setCount] = useState(0);
-  const [chartRendered, setChartRendered] = useState(false);
-
-  useEffect(() => {
-    if (!chartRendered) {
-      const ws = new WebSocket(websocketUrl);
-      ws.onmessage = event => {
-        let chartData = JSON.parse(event.data);
-        chartData = chartData.chart;
-        // console.log(chartData);
-        for (const item in chartData) {
-          // chartData[item].time = chartData[item].time.substr(0, 10);
-        }
-        console.table(chartData);
-        if (chartData) {
-          const chart = createChart(document.getElementById('test'), { width: 600, height: 300 });
-          const lineSeries = chart.addLineSeries();
-          lineSeries.setData(chartData);
-        }
-      };
-      // lineSeries.setData([
-      //     { time: '2019-04-11', value: 80.01 },
-      //     { time: '2019-04-12', value: 96.63 },
-      //     { time: '2019-04-13', value: 76.64 },
-      //     { time: '2019-04-14', value: 81.89 },
-      //     { time: '2019-04-15', value: 74.43 },
-      //     { time: '2019-04-16', value: 80.01 },
-      //     { time: '2019-04-17', value: 96.63 },
-      //     { time: '2019-04-18', value: 76.64 },
-      //     { time: '2019-04-19', value: 81.89 },
-      //     { time: '2019-04-20', value: 74.43 },
-      // ]);
-      setChartRendered(true);
-    }
-  });
-
-  const increaseCount = () => {
-    setCount(count + 1);
-  }
-
   return (
     <div>
-      <p>You've pressed the button {count} times</p>
-      <button onClick={increaseCount}>+1</button>
-      <div id='test'></div>
+      <LineChart />
     </div>
   );
 }
 
+function LineChart() {
+  const [chartRendered] = useState(false);
+
+  useEffect(() => {
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    const ws = new WebSocket(websocketUrl);
+    const chart = createChart(
+      document.getElementById('test'),
+      { width: width, height: height}
+    );
+    const areaSeries = chart.addAreaSeries();
+    chart.applyOptions({
+      timeScale: {
+        rightOffset: 12,
+        barSpacing: 3,
+        fixLeftEdge: false,
+        lockVisibleTimeRangeOnResize: true,
+        rightBarStaysOnScroll: true,
+        borderVisible: false,
+        borderColor: '#fff000',
+        visible: true,
+        timeVisible: true,
+        secondsVisible: true,
+      },
+      layout: {
+        backgroundColor: '#282c34',
+        textColor: '#696969',
+        fontSize: 12,
+        fontFamily: 'Calibri',
+      },
+    });
+    ws.onmessage = event => {
+      const chartData = JSON.parse(event.data);
+      if (chartData.chart) {
+        for (const item in chartData.chart) {
+          chartData.chart[item].time = Math.floor(chartData.chart[item].time / 1000)
+        }
+        areaSeries.setData(chartData.chart);
+      } else if (!chartData.chart) {
+        chartData.time = Math.floor(chartData.time / 1000)
+        areaSeries.update(chartData);
+      }
+    };
+    window.addEventListener('resize', () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      chart.resize(height, width);
+    });
+  }, [chartRendered]);
+
+  return (
+    <div id='test'></div>
+  );
+}
+
 export default App;
+
+
+/////////////////////////////////////////
