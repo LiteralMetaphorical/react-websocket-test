@@ -20,7 +20,7 @@ function LineChart() {
     const ws = new WebSocket(websocketUrl);
     const chart = createChart(
       document.getElementById('test'),
-      { width: width, height: height - 400}
+      { width: width, height: height}
     );
     const areaSeries = chart.addAreaSeries();
     chart.applyOptions({
