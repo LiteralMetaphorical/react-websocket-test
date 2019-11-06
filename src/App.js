@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { createChart } from 'lightweight-charts';
 import './App.css';
 
@@ -13,7 +13,6 @@ function App() {
 }
 
 function LineChart() {
-  const [chartRendered] = useState(false);
 
   useEffect(() => {
     let width = window.innerWidth;
@@ -21,7 +20,7 @@ function LineChart() {
     const ws = new WebSocket(websocketUrl);
     const chart = createChart(
       document.getElementById('test'),
-      { width: width, height: height}
+      { width: width, height: height - 400}
     );
     const areaSeries = chart.addAreaSeries();
     chart.applyOptions({
@@ -61,7 +60,7 @@ function LineChart() {
       height = window.innerHeight;
       chart.resize(height, width);
     });
-  }, [chartRendered]);
+  });
 
   return (
     <div id='test'></div>
@@ -69,6 +68,3 @@ function LineChart() {
 }
 
 export default App;
-
-
-/////////////////////////////////////////
