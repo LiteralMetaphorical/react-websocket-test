@@ -80,43 +80,44 @@ function LineChart() {
       })
       .catch(error => console.log(error));
     }
-    if (chartRendered) {
-      document.getElementById('line-chart').firstChild.remove();
-    }
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-    const ws = new WebSocket(coinbaseWSUrl);
-    setWsOpened(true);
-    const chart = createChart(
-      document.getElementById('line-chart'),
-      { width: width - 17, height: height - 100}
-    );
-    const areaSeries = chart.addAreaSeries({title: currencyPair});
-    chart.applyOptions(chartOptions);
-    ws.onopen = () => {
-      ws.send(JSON.stringify(
-        {
-          'type': 'subscribe',
-          'product_ids': currencyPairs,
-          'channels': ['ticker']
+    if (!chartRendered && currencyPairs.length > 0) {
+      let width = window.innerWidth;
+      let height = window.innerHeight;
+      const chart = createChart(
+        document.getElementById('line-chart'),
+        { width: width - 17, height: height - 100}
+      );
+      const areaSeries = chart.addAreaSeries({title: currencyPair});
+      chart.applyOptions(chartOptions);
+      window.addEventListener('resize', () => {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        chart.resize(height, width);
+      });
+      if (currencyPairs.length > 0) {
+        const ws = new WebSocket(coinbaseWSUrl);
+        ws.onopen = () => {
+          ws.send(JSON.stringify(
+            {
+              'type': 'subscribe',
+              'product_ids': currencyPairs,
+              'channels': ['ticker']
+            }
+          ));
         }
-      ));
-    }
-    ws.onmessage = event => {
-      const chartData = JSON.parse(event.data);
-      const date = new Date();
-      const offset = date.getTimezoneOffset();
-      const timestamp = date.getTime() / 1000 - offset*60;
-      if (chartData.type === 'ticker' && chartData.product_id === currencyPair) {
-        areaSeries.update({time: timestamp, value: parseFloat(chartData.price, 10)});
+        ws.onmessage = event => {
+          const chartData = JSON.parse(event.data);
+          const date = new Date();
+          const offset = date.getTimezoneOffset();
+          const timestamp = date.getTime() / 1000 - offset*60;
+          if (chartData.type === 'ticker' && chartData.product_id === currencyPair) {
+            areaSeries.update({time: timestamp, value: parseFloat(chartData.price, 10)});
+          }
+        };
+        setRendered(true);
+        setWsOpened(true);
       }
-    };
-    window.addEventListener('resize', () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      chart.resize(height, width);
-    });
-    setRendered(true);
+    }
   }, [currencyPair, chartRendered, currencyPairs, wsOpened]);
 
   return (
@@ -164,7 +165,7 @@ function CandleChart() {
         fontSize: 12,
         fontFamily: 'Calibri',
       }
-    })
+    });
     candlestickSeries = chart.addCandlestickSeries({title: 'candle'});
     candleWs.onmessage = (message) => {
       let chartData = JSON.parse(message.data).candela;
